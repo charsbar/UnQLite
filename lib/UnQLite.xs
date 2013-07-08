@@ -37,9 +37,9 @@ extern "C" {
     }
 
 static int _unqlite_vm_default_output(const void* pOutput, unsigned int nLen, void *pUserData) {
+   dTHX;
    int i, count;
    if (pUserData) {
-       dTHX;
        dSP;
        ENTER;
        SAVETMPS;
@@ -51,7 +51,7 @@ static int _unqlite_vm_default_output(const void* pOutput, unsigned int nLen, vo
        LEAVE;
        return UNQLITE_OK;
    } else {
-       if (_write(STDOUT_FILENO, pOutput, nLen) < 0) {
+       if (write(STDOUT_FILENO, pOutput, nLen) < 0) {
            return UNQLITE_ABORT;
        }
        return UNQLITE_OK;
