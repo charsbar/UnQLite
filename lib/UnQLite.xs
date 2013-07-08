@@ -37,12 +37,26 @@ extern "C" {
     }
 
 static int _unqlite_vm_default_output(const void* pOutput, unsigned int nLen, void *pUserData) {
-   if (_write(STDOUT_FILENO, pOutput, nLen) < 0) {
-       return UNQLITE_ABORT;
+   int i, count;
+   if (pUserData) {
+       dTHX;
+       dSP;
+       ENTER;
+       SAVETMPS;
+       PUSHMARK(SP);
+       XPUSHs(sv_2mortal(newSVpv((const char*)pOutput, nLen)));
+       PUTBACK;
+       count = call_sv(pUserData, G_VOID);
+       FREETMPS;
+       LEAVE;
+       return UNQLITE_OK;
+   } else {
+       if (_write(STDOUT_FILENO, pOutput, nLen) < 0) {
+           return UNQLITE_ABORT;
+       }
+       return UNQLITE_OK;
    }
-   return UNQLITE_OK;
 }
-
 
 MODULE = UnQLite    PACKAGE = UnQLite
 
@@ -256,12 +270,14 @@ OUTPUT:
     RETVAL
 
 SV*
-_exec(self, source)
+_exec(self, source, config)
     SV *self;
     const char *source;
+    SV *config;
 PREINIT:
-    int rc;
+    int rc, i, l;
     unqlite_vm *pvm;
+    SV **tmp;
 CODE:
     unqlite *pdb = XS_STATE(unqlite*, self);
     rc = unqlite_compile(pdb, source, strlen(source), &pvm);
@@ -269,8 +285,31 @@ CODE:
         SETRC(rc, self);
         RETVAL = &PL_sv_undef;
     } else {
-        rc = unqlite_vm_config(pvm, UNQLITE_VM_CONFIG_OUTPUT, _unqlite_vm_default_output, NULL);
-        SETRC(rc, self);
+        if (config && SvROK(config) && SvTYPE(SvRV(config)) == SVt_PVHV) {
+            HV *conf = (HV *)SvRV(config);
+            if (hv_exists(conf, "output", 6)) {
+                rc = unqlite_vm_config(pvm, UNQLITE_VM_CONFIG_OUTPUT, _unqlite_vm_default_output, *hv_fetchs(conf, "output", 0));
+                SETRC(rc, self);
+            }
+            if (hv_exists(conf, "import_path", 11)) {
+                rc = unqlite_vm_config(pvm, UNQLITE_VM_CONFIG_IMPORT_PATH, SvPV_nolen(*hv_fetchs(conf, "import_path", 0)));
+                SETRC(rc, self);
+            }
+            if (hv_exists(conf, "argv", 4)) {
+                tmp = hv_fetchs(conf, "argv", 4);
+                if (*tmp && SvROK(*tmp) && SvTYPE(SvRV(*tmp)) == SVt_PVAV) {
+                    AV *argv = (AV *)SvRV(*tmp);
+                    for (i = 0, l = av_len(argv); i <= l; i++) {
+                        rc = unqlite_vm_config(pvm, UNQLITE_VM_CONFIG_ARGV_ENTRY, SvPV_nolen(*av_fetch(argv, i, 1)));
+                        SETRC(rc, self);
+                    }
+                }
+            }
+
+        } else {
+            rc = unqlite_vm_config(pvm, UNQLITE_VM_CONFIG_OUTPUT, _unqlite_vm_default_output, NULL);
+            SETRC(rc, self);
+        }
 
         rc = unqlite_vm_exec(pvm);
         SETRC(rc, self);

@@ -57,8 +57,8 @@ sub cursor_init {
 }
 
 sub exec {
-    my ($self, $jx9_source) = @_;
-    _exec($self, $jx9_source);
+    my ($self, $jx9_source, $config) = @_;
+    _exec($self, $jx9_source, $config);
 }
 
 package UnQLite::Cursor;
