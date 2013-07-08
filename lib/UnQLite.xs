@@ -36,6 +36,14 @@ extern "C" {
         } \
     }
 
+static int _unqlite_vm_default_output(const void* pOutput, unsigned int nLen, void *pUserData) {
+   if (_write(STDOUT_FILENO, pOutput, nLen) < 0) {
+       return UNQLITE_ABORT;
+   }
+   return UNQLITE_OK;
+}
+
+
 MODULE = UnQLite    PACKAGE = UnQLite
 
 PROTOTYPES: DISABLE
@@ -247,6 +255,34 @@ CODE:
 OUTPUT:
     RETVAL
 
+SV*
+_exec(self, source)
+    SV *self;
+    const char *source;
+PREINIT:
+    int rc;
+    unqlite_vm *pvm;
+CODE:
+    unqlite *pdb = XS_STATE(unqlite*, self);
+    rc = unqlite_compile(pdb, source, strlen(source), &pvm);
+    if (rc != UNQLITE_OK) {
+        SETRC(rc, self);
+        RETVAL = &PL_sv_undef;
+    } else {
+        rc = unqlite_vm_config(pvm, UNQLITE_VM_CONFIG_OUTPUT, _unqlite_vm_default_output, NULL);
+        SETRC(rc, self);
+
+        rc = unqlite_vm_exec(pvm);
+        SETRC(rc, self);
+        if (rc == UNQLITE_OK) {
+            RETVAL = &PL_sv_yes;
+        } else {
+            RETVAL = &PL_sv_undef;
+        }
+        unqlite_vm_release(pvm);
+    }
+OUTPUT:
+    RETVAL
 
 MODULE = UnQLite    PACKAGE = UnQLite::Cursor
 

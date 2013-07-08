@@ -56,6 +56,11 @@ sub cursor_init {
     bless [$self->_cursor_init(), $self], 'UnQLite::Cursor';
 }
 
+sub exec {
+    my ($self, $jx9_source) = @_;
+    _exec($self, $jx9_source);
+}
+
 package UnQLite::Cursor;
 
 sub rc {
