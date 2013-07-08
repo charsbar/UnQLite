@@ -245,6 +245,17 @@ This API returns stringified version of C<< $db->rc() >>. It's not human readabl
 
 Create new cursor object.
 
+=item C<< $db->exec($jx9_script, $config) >>
+
+Execute a Jx9 script to manipulate JSON document store (see http://unqlite.org/jx9.html for details). You can also pass a hash reference to configure its behavior. Supported config options are: C<<output>> takes a coderef which then takes a string to output; C<<argv>> takes an array reference to populate Jx9's $argv; C<<import_path>> takes a path to add to search Jx9 scripts.
+
+    my $out;
+    $db->exec('print "$argv[0], $argv[1]"', {
+        config => sub {$out .= $_[0]},
+        argv => [qw/Hello world/],
+        import_path => '/home/foo/jx9',
+    });  # => $out contains "Hello, world"
+
 =back
 
 =head1 UnQLite::Cursor
