@@ -236,6 +236,18 @@ Return code from UnQLite. It may updates after any UnQLite API call.
 
 This API returns stringified version of C<< $db->rc() >>. It's not human readable but it's better than magic number.
 
+=item C<< $db->begin >>
+
+Begin a write-transaction. Note that transactions are NOT supported for in-memory databases.
+
+=item C<< $db->commit >>
+
+Commit all the changes in the transaction. For very large insertion (More than 20000), you should commit periodically to free some memory.
+
+=item C<< $db->rollback >>
+
+Rollback all the changes in the transaction.
+
 =item C<< my $cursor = $db->cursor_init() >>
 
 Create new cursor object.

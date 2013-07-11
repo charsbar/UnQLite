@@ -214,6 +214,57 @@ CODE:
 OUTPUT:
     RETVAL
 
+SV*
+begin(self)
+    SV *self;
+PREINIT:
+    int rc;
+CODE:
+    unqlite *pdb = XS_STATE(unqlite*, self);
+    rc = unqlite_begin(pdb);
+    SETRC(rc, self);
+    if (rc==UNQLITE_OK) {
+        RETVAL = &PL_sv_yes;
+    } else {
+        RETVAL = &PL_sv_undef;
+    }
+OUTPUT:
+    RETVAL
+
+SV*
+commit(self)
+    SV *self;
+PREINIT:
+    int rc;
+CODE:
+    unqlite *pdb = XS_STATE(unqlite*, self);
+    rc = unqlite_commit(pdb);
+    SETRC(rc, self);
+    if (rc==UNQLITE_OK) {
+        RETVAL = &PL_sv_yes;
+    } else {
+        RETVAL = &PL_sv_undef;
+    }
+OUTPUT:
+    RETVAL
+
+SV*
+rollback(self)
+    SV *self;
+PREINIT:
+    int rc;
+CODE:
+    unqlite *pdb = XS_STATE(unqlite*, self);
+    rc = unqlite_rollback(pdb);
+    SETRC(rc, self);
+    if (rc==UNQLITE_OK) {
+        RETVAL = &PL_sv_yes;
+    } else {
+        RETVAL = &PL_sv_undef;
+    }
+OUTPUT:
+    RETVAL
+
 void
 DESTROY(self)
     SV * self;
